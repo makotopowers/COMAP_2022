@@ -5,7 +5,7 @@ import pandas as pd
 import netCDF4
 import seaborn
 import xarray as xr
-import sklearn
+import sklearn.linear_model
 import time
 
 
@@ -26,15 +26,32 @@ class FishyFishy():
 
 
     def lin_reg(self):
-        #interpolate between heat data so there is new daily data
-        self.interval = np.ndarray() #needs to be (day, heat, x, y)
-        pass
+        x = np.arange(1671).reshape(-1,1)
+        y = self.sst[x,50,50].reshape(-1,1)
+        regr = sklearn.linear_model.LinearRegression()
+        regr.fit(x,y)
+
+        future_sst = np.zeros((3000,180,360))
+
+        x_future = np.arange(3000).reshape(-1,1)
+        y_future = regr.predict(x_future)
+        plt.plot(x,y,color="black")
+
+        #plt.scatter(x_future, y_future, color="black")
+        plt.plot(x_future, y_future, color="blue", linewidth=3)       
+        plt.show()
+        #print(y)
+        #for i in range(180):
+            #for j in range(360):
+
+                
 
 
     def heat_map(self):
         x = np.arange(0,100)
         y = np.arange(0,100)
         plt.pcolormesh(x,y,self.sst[500,0:100,0:100])
+        plt.colorbar()
         plt.show()
 
 
@@ -84,6 +101,7 @@ class FishyFishy():
 
         overlay_1 = self.sst[500,0:99,0:99] + 20 * initial_pos
         #plt.pcolormesh(x,y,overlay_1)
+        #plt.colorbar()
         #plt.show()
 
 
@@ -130,6 +148,7 @@ class FishyFishy():
 
         overlay_2 = self.sst[500,0:100,0:100] + 20 * final_pos
         plt.pcolormesh(x,y,overlay_2)
+
         plt.show()
         #for day in self.interval:
             #water_temp = self.sst[depth,:15,:15] # self.interpolated[depth,:15,:15,day]
@@ -148,3 +167,5 @@ fish = FishyFishy(ocean_data, fish_data)
 fish.fish_migration()
 
 #fish.heat_map()
+
+#fish.lin_reg()
