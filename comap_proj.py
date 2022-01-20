@@ -6,6 +6,7 @@ import netCDF4
 import seaborn
 import xarray as xr
 import sklearn
+import time
 
 
 class FishyFishy():
@@ -15,7 +16,7 @@ class FishyFishy():
         self.fish_data = dict()
 
         #dummy variables for testing
-        self.days = range(10)
+        self.days = range(50)
 
 
     def lin_reg(self):
@@ -33,9 +34,9 @@ class FishyFishy():
 
     def heat_map(self, region=None):
         #heatmap of ocean temp
-        ds = xr.open_dataset(self.temp_data)
-        df = ds.to_dataframe()
-        print(df.head(10))
+        #ds = xr.open_dataset(self.temp_data)
+        #df = ds.to_dataframe()
+        #print(df.head(10))
 
 
         fp=self.temp_data
@@ -43,44 +44,50 @@ class FishyFishy():
         print(type(nc))
         lat = nc.variables['lat'][:]
         lon = nc.variables['lon'][:]
-        time = nc.variables['time'][:]
+        #time = nc.variables['time'][:]
         sst = nc.variables['sst'][:] # 2 meter temperature
-        time_bnds = nc.variables['time_bnds'][:] # mean sea level pressure
+        #time_bnds = nc.variables['time_bnds'][:] # mean sea level pressure
         self.sst = nc.variables['sst'][:]
         
         #print(f'LAT_SHAPE: {lat.shape}')
         #print(f'LON_SHAPE: {lon.shape}')
-        print(f'SST_shape: {sst.shape}')
+        #print(f'SST_shape: {sst.shape}')
         #print(f'SST: {sst}')
-        print(f'{sst[1,50:65,-15:-1]}')
-        print(f'{sst[1,50:65,-15:-1].shape}')
+        #print(f'{sst[1,50:65,-16:-1]}')
+        print(f'{sst[1671,:,:].shape}')
         #print(lat)
-
+        x = np.arange(0,100)
+        y = np.arange(0,100)
         #seaborn.heatmap(self.sst[1:2,0:-15,50:65])
+        #plt.pcolormesh(x,y,sst[500,0:100,0:100])
         #plt.show()
+
+
 
     def fish_migration(self, depth):
         
         #initiate arrays for school position and water temp 
-        fish_pos = np.zeros((15,15))
-        water_temp = self.sst[depth,50:65,-15:0] # self.interpolated once lin reg
+        fish_pos = np.zeros((100,100))
+        week = 1
+        water_temp = self.sst[week,0:100,0:100] # self.interpolated once lin reg
         print(f'water_temp: {water_temp}')
         too_hot_counter = 0
         
+        size = 99
         #initiate schools 
-        for i in range(1,16): 
+        for i in range(1,200): 
 
             #start fish at random positions
-            ax, ay = np.random.random(2)*15//1 
+            ax, ay = np.random.random(2)*size//1 
             if ax == 0:
                 ax = ax+1
-            elif ax ==14:
+            elif ax ==99:
                 ax = ax-1
             else: 
                 ax = ax
             if ay == 0:
                 ay = ay+1
-            elif ay ==14:
+            elif ay ==99:
                 ay = ay-1
             else: 
                 ay = ay
@@ -97,18 +104,31 @@ class FishyFishy():
             
         print(f'FISH_DATA: {self.fish_data}')
 
-        to_plot = []
+        x = np.arange(0,100)
+        y = np.arange(0,100)
+
+        initial_pos = np.zeros((99,99))
+        for school in self.fish_data:
+            initial_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
+
+
+        overlay_1 = self.sst[500,0:99,0:99] + 20 * initial_pos
+        #plt.pcolormesh(x,y,overlay_1)
+        #plt.show()
+
+
+
+        
         #loop through time interval 
         for day in self.days:
             print(f'Day: {day}')
             #for each day, change the position of each fish school 
+            killed = []
             for school in self.fish_data.keys():
 
                 lat, lon = self.fish_data[school][0], self.fish_data[school][1]  
 
                 #fish movement logic
-                print(lat, lon)
-                #abs(self.optimal_temp[self.fish_data[school][2]] -
 
                 #move fish to block with minimum difference between optimal and temp
                 try:
@@ -128,41 +148,22 @@ class FishyFishy():
                 else:
                     self.fish_data[school][2] = 0
 
-                if self.fish_data[school][2] > self.fish_data[school][5]:
-                    killed = self.fish_data.pop(school)
-                    print(f'{school} was killed.')
+                #if self.fish_data[school][2] > self.fish_data[school][5]:
+                    #killed.append(school)
+                    #print(f'{school} was killed.')
 
+            if killed:
+                for death in killed:
+                    self.fish_data.pop(death)
+                killed = []
 
+        final_pos = np.zeros((100,100))
+        for school in self.fish_data:
+            final_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
-            fishes = []
-            for school in self.fish_data.keys():
-                fishes.append(self.fish_data[school][0:2])
-                print(self.fish_data[school][0:2])
-            print(fishes)
-            fishes = [list(x) for x in zip(*fishes)]
-            print(fishes)  
-            
-            to_plot.append(fishes)
-            
-        #plt.title(f'Day: {i}')
-        #x = plt.scatter(fishies[0], fishies[1])
-        #plt.show()
-        
-        print(f'to_plot: {to_plot}')
-        fig, ax = plt.subplots(3,3 , figsize=(20, 20), sharex = True, sharey = True)
-        for i in range(3):
-            for j in range(3):
-                if 4*i + j >9:
-                    pass
-                else:
-                    
-                    ax[i,j].scatter(to_plot[4*i+j][0],to_plot[2*i+j][1])
-                    #ax[i,j].set_xlabel("lat")
-                    #ax[i,j].set_ylabel("lon")
-                    #ax[i,j].xlim(0,15)
-                    #ax[i,j].ylim(0,15)
-                    ax[i,j].set_title(f'Day: {3*i+j+1}')
-
+        overlay_2 = self.sst[500,0:100,0:100] + 20 * final_pos
+        time.sleep(0.001)
+        plt.pcolormesh(x,y,overlay_2)
         plt.show()
         #for day in self.interval:
             #water_temp = self.sst[depth,:15,:15] # self.interpolated[depth,:15,:15,day]
@@ -181,6 +182,6 @@ path = '/Users/makotopowers/Desktop/sst.wkmean.1990-present.nc'
 fish_temp_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
 sol = FishyFishy(path)
 
-#sol.run(fish_temp_data, 1)
+sol.run(fish_temp_data, 1)
 
-sol.heat_map()
+#sol.heat_map()
