@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import netCDF4
 import seaborn
+import xarray as xr
+import sklearn
+
 
 class FishyFishy():
     def __init__(self, temp_data):
@@ -30,9 +33,14 @@ class FishyFishy():
 
     def heat_map(self, region=None):
         #heatmap of ocean temp
-        
+        ds = xr.open_dataset(self.temp_data)
+        df = ds.to_dataframe()
+        print(df.head(10))
+
+
         fp=self.temp_data
         nc = netCDF4.Dataset(fp)
+        print(type(nc))
         lat = nc.variables['lat'][:]
         lon = nc.variables['lon'][:]
         time = nc.variables['time'][:]
@@ -43,19 +51,20 @@ class FishyFishy():
         #print(f'LAT_SHAPE: {lat.shape}')
         #print(f'LON_SHAPE: {lon.shape}')
         print(f'SST_shape: {sst.shape}')
-        print(f'SST: {sst}')
-        print(f'{sst[1,45:60,0:30]}')
+        #print(f'SST: {sst}')
+        print(f'{sst[1,50:65,-15:-1]}')
+        print(f'{sst[1,50:65,-15:-1].shape}')
         #print(lat)
 
-        #seaborn.heatmap(sst[0,:,:])
+        #seaborn.heatmap(self.sst[1:2,0:-15,50:65])
         #plt.show()
 
     def fish_migration(self, depth):
         
         #initiate arrays for school position and water temp 
         fish_pos = np.zeros((15,15))
-        water_temp = self.sst[depth,:16,:16] # self.interpolated once lin reg
-
+        water_temp = self.sst[depth,50:65,-15:0] # self.interpolated once lin reg
+        print(f'water_temp: {water_temp}')
         too_hot_counter = 0
         
         #initiate schools 
@@ -166,11 +175,12 @@ class FishyFishy():
         
 
    
-path = '/Users/makotopowers/Desktop/projects/COMAP_2022/sst.wkmean.1990-present.nc'
+path = '/Users/makotopowers/Desktop/sst.wkmean.1990-present.nc'
 
 
-fish_temp_data = [('cod', 15, 3, 2), ('tuna', 13, 4, 3)]
+fish_temp_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
 sol = FishyFishy(path)
-sol.heat_map()
-sol.run(fish_temp_data, 1)
 
+#sol.run(fish_temp_data, 1)
+
+sol.heat_map()
