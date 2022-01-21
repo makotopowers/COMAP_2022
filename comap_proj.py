@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import netCDF4
-import seaborn
-import xarray as xr
+import random
+
 import sklearn.linear_model
-import time
+
 
 
 class FishyFishy():
@@ -20,29 +20,31 @@ class FishyFishy():
         self.sst = nc.variables['sst'][:] # shape = (1672,180,360)
 
         self.fish_types = []
+        panic = 0
         for fish, temp, survivable_days, acceptable_range in fish_data:
-            self.optimal_temp[fish] = (temp, survivable_days, acceptable_range)
+            self.optimal_temp[fish] = (temp, survivable_days, acceptable_range, panic)
             self.fish_types.append(fish)
 
 
     def lin_reg(self):
         x = np.arange(1671).reshape(-1,1)
-        y = self.sst[x,50,50].reshape(-1,1)
-        regr = sklearn.linear_model.LinearRegression()
-        regr.fit(x,y)
-
-        future_sst = np.zeros((3000,180,360))
-
-        x_future = np.arange(3000).reshape(-1,1)
-        y_future = regr.predict(x_future)
-        plt.plot(x,y,color="black")
+        future_sst = np.zeros((3000,100,100))
 
         #plt.scatter(x_future, y_future, color="black")
-        plt.plot(x_future, y_future, color="blue", linewidth=3)       
-        plt.show()
+        #plt.plot(x_future, y_future, color="blue", linewidth=3)       
+        #plt.show()
         #print(y)
-        #for i in range(180):
-            #for j in range(360):
+        for i in range(100):
+            for j in range(100):
+                y = self.sst[x,i,j].reshape(-1,1)
+                regr = sklearn.linear_model.LinearRegression()
+                regr.fit(x,y)
+
+                x_future = np.arange(3000).reshape(-1,1)
+                y_future = regr.predict(x_future)
+                future_sst[:,i,j] = y_future
+
+        self.future_sst = future_sst
 
                 
 
@@ -82,7 +84,7 @@ class FishyFishy():
             random_type = np.random.choice(self.fish_types)
 
             self.fish_data[f'school_{i}'] = [x,y,too_hot_counter, random_type, self.optimal_temp[random_type][0], \
-                self.optimal_temp[random_type][1], self.optimal_temp[random_type][2]]
+                self.optimal_temp[random_type][1], self.optimal_temp[random_type][2], self.optimal_temp[random_type][3]]
 
             
         print(f'FISH_DATA: {self.fish_data}')
@@ -110,7 +112,7 @@ class FishyFishy():
         #loop through time interval 
         for week in self.weeks:
             #print(f'Week: {week}')
-
+            water_temp = self.sst[week,0:100,0:100] #self.future_sst
             #change the position of each school 
             killed = []
 
@@ -119,11 +121,25 @@ class FishyFishy():
 
                 #move fish to block with minimum difference between optimal and temp
                 try:
-                    itemindex = np.where(water_temp[lat-1:lat+2,lon-1:lon+2] == np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]))
-                    self.fish_data[school][0] += (itemindex[0][0]-1)
-                    self.fish_data[school][1] += (itemindex[1][0]-1)
+                    if self.fish_data[school][7] != 0:
+                        self.fish_data[school][0] += int(round(random.uniform(-1,1),0))
+                        self.fish_data[school][1] += int(round(random.uniform(-1,1),0))
+                        self.fish_data[school][7] -= 1
+                    else:
+                        if np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]) > self.fish_data[school][4]:
+                            itemindex = np.where(water_temp[lat-1:lat+2,lon-1:lon+2] == np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]))
+                            self.fish_data[school][0] += (itemindex[0][0]-1)
+                            self.fish_data[school][1] += (itemindex[1][0]-1)
+                        else:
+                            diff = np.abs(water_temp[lat-1:lat+2,lon-1:lon+2] - self.fish_data[school][4])
+                            itemindex = np.where(diff == np.amin(diff))
+                            self.fish_data[school][0] += (itemindex[0][0]-1)
+                            self.fish_data[school][1] += (itemindex[1][0]-1)
+                        if (itemindex[0][0]-1) == 0 and (itemindex[1][0]-1) == 0 and self.fish_data[school][7] == 0:
+                            self.fish_data[school][7] = 10 #have the fish panic for 10 days
+
                 except ValueError:
-                    print('array has size 0.')
+                    continue
 
                 #check condition of school
 
