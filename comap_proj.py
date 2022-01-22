@@ -31,7 +31,7 @@ class FishyFishy():
     def lin_reg(self):
         x = np.arange(1671).reshape(-1,1)
         content = [np.zeros((3000,1,1))]*(future_pred_area[0]*future_pred_area[1])
-        y = self.sst[x,45,300].reshape(-1,1)
+        y = self.sst[x,300,45].reshape(-1,1)
 
         regr = sklearn.linear_model.LinearRegression()
         regr.fit(x,y)
@@ -116,12 +116,12 @@ class FishyFishy():
         for school in self.fish_data:
             initial_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
-        '''
+        
         overlay_1 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * initial_pos
-        plt.pcolormesh(x,y,overlay_1.transpose(1,0))
+        #plt.pcolormesh(x,y,overlay_1.transpose(1,0))
         #plt.colorbar()
-        plt.show()
-        '''
+        #plt.show()
+        
 
 
         
@@ -192,7 +192,7 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
+        plt.pcolormesh(x[0:90],y[90:150],overlay_2.transpose(1,0)[90:150,0:90])
         plt.show()
         
 
@@ -211,8 +211,8 @@ future_sst = '/Users/makotopowers/Desktop/future_sst.npy'
 
 fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst)
 
-fish.fish_migration()
+#fish.fish_migration()
 
 
-#fish.lin_reg()
+fish.lin_reg()
 #fish.heat_map()
