@@ -83,7 +83,7 @@ class FishyFishy():
        
 
         #initiate schools 
-        for i in range(1,1000): #how many schools
+        for i in range(1,10000): #how many schools
             ax = np.random.random(1)*(future_pred_area[0]-1)//1 
             ay = np.random.random(1)*(future_pred_area[1]-1)//1 
             if ax == 0:
@@ -174,8 +174,8 @@ class FishyFishy():
                 else:
                     self.fish_data[school][2] = 0
 
-                #if self.fish_data[school][2] > self.fish_data[school][5]:
-                    #killed.append(school)
+                if self.fish_data[school][2] > self.fish_data[school][5]:
+                    killed.append(school)
                     #print(f'{school} was killed.')
 
             if killed:
@@ -192,27 +192,25 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        plt.pcolormesh(x[0:90],y[90:150],overlay_2.transpose(1,0)[90:150,0:90])
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
         plt.show()
         
 
 
 
-    def boat_movement(self):
-        pass
 
         
 
    
-ocean_data = '/Users/makotopowers/Desktop/sst.wkmean.1990-present.nc'
+ocean_data = 'sst.wkmean.1990-present.nc'
 fish_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
 future_pred_area = [360,180]
-future_sst = '/Users/makotopowers/Desktop/future_sst.npy'
+future_sst = 'future_sst.npy'
 
 fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst)
 
-#fish.fish_migration()
 
 
-fish.lin_reg()
+fish.fish_migration()
+#fish.lin_reg()
 #fish.heat_map()
