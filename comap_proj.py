@@ -4,55 +4,70 @@ import numpy as np
 import pandas as pd
 import netCDF4
 import random
-
 import sklearn.linear_model
 
 
 
 class FishyFishy():
-    def __init__(self, ocean_data, fish_data):
+    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst):
         #self.temp_data = temp_data
         self.optimal_temp = dict()
         self.fish_data = dict()
-        self.weeks = range(1671)
+        self.weeks = range(600)
         #fp=self.temp_data
         nc = netCDF4.Dataset(ocean_data)
-        self.sst = nc.variables['sst'][:] # shape = (1672,180,360)
+        self.sst = nc.variables['sst'][:].transpose(0,2,1) # shape = (1672,180,360)
 
+
+        self.future_pred_area = future_pred_area
         self.fish_types = []
         panic = 0
         for fish, temp, survivable_days, acceptable_range in fish_data:
             self.optimal_temp[fish] = (temp, survivable_days, acceptable_range, panic)
             self.fish_types.append(fish)
+        self.future_sst = np.load(future_sst).transpose(0,2,1)
 
 
     def lin_reg(self):
         x = np.arange(1671).reshape(-1,1)
-        future_sst = np.zeros((3000,100,100))
+        content = [np.zeros((3000,1,1))]*(future_pred_area[0]*future_pred_area[1])
+        y = self.sst[x,45,300].reshape(-1,1)
 
-        #plt.scatter(x_future, y_future, color="black")
-        #plt.plot(x_future, y_future, color="blue", linewidth=3)       
-        #plt.show()
-        #print(y)
-        for i in range(100):
-            for j in range(100):
+        regr = sklearn.linear_model.LinearRegression()
+        regr.fit(x,y)
+        x_future = np.arange(3000).reshape(-1,1)
+        y_future = regr.predict(x_future).reshape(-1,)
+        print(regr.predict(np.arange(10,15).reshape(-1,1)))
+        print(regr.predict(np.arange(2986,2988).reshape(-1,1)))
+        plt.plot(x,y)
+        plt.plot(x_future,y_future, color='black')
+        plt.show()
+
+        #Code has already been run. Get array from self.future_sst
+        '''
+        content = [np.zeros((3000,1,1))]*(future_pred_area[0]*future_pred_area[1])
+        future_sst = np.array(content).reshape(3000,future_pred_area[0],future_pred_area[1])
+        
+        for i in range(future_pred_area[0]):
+            for j in range(future_pred_area[1]):
                 y = self.sst[x,i,j].reshape(-1,1)
                 regr = sklearn.linear_model.LinearRegression()
                 regr.fit(x,y)
+                y_future = regr.predict(x_future).reshape(-1,)
+                
 
-                x_future = np.arange(3000).reshape(-1,1)
-                y_future = regr.predict(x_future)
                 future_sst[:,i,j] = y_future
 
         self.future_sst = future_sst
+        np.save('/Users/makotopowers/Desktop', future_sst)
+        '''
 
-                
 
 
     def heat_map(self):
-        x = np.arange(0,100)
-        y = np.arange(0,100)
-        plt.pcolormesh(x,y,self.sst[500,0:100,0:100])
+        x = np.arange(0,future_pred_area[1])
+        y = np.arange(0,future_pred_area[0])
+        plt.pcolormesh(x,y,self.future_sst[100,0:future_pred_area[0],0:future_pred_area[1]])
         plt.colorbar()
         plt.show()
 
@@ -62,21 +77,22 @@ class FishyFishy():
         
         #initiate arrays for school position and water temp 
         week = 1
-        water_temp = self.sst[week,0:100,0:100] 
+        water_temp = self.future_sst[week*5,0:future_pred_area[0],0:future_pred_area[1]] 
         too_hot_counter = 0
         
-        size = 99 #size of region
+       
 
         #initiate schools 
-        for i in range(1,200): #how many schools
-            ax, ay = np.random.random(2)*size//1 
+        for i in range(1,1000): #how many schools
+            ax = np.random.random(1)*(future_pred_area[0]-1)//1 
+            ay = np.random.random(1)*(future_pred_area[1]-1)//1 
             if ax == 0:
                 ax = ax+1
-            elif ax ==size:
+            elif ax ==future_pred_area[0]-1:
                 ax = ax-1
             if ay == 0:
                 ay = ay+1
-            elif ay ==size:
+            elif ay ==future_pred_area[1]-1:
                 ay = ay-1
  
             x,y = int(ax), int(ay)
@@ -93,26 +109,26 @@ class FishyFishy():
 
         #display initial positions
 
-        x = np.arange(0,100)
-        y = np.arange(0,100)
+        x = np.arange(0,future_pred_area[0])
+        y = np.arange(0,future_pred_area[1])
 
-        initial_pos = np.zeros((99,99))
+        initial_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
         for school in self.fish_data:
             initial_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
-
-        overlay_1 = self.sst[500,0:99,0:99] + 20 * initial_pos
-        #plt.pcolormesh(x,y,overlay_1)
+        '''
+        overlay_1 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * initial_pos
+        plt.pcolormesh(x,y,overlay_1.transpose(1,0))
         #plt.colorbar()
-        #plt.show()
-
+        plt.show()
+        '''
 
 
         
         #loop through time interval 
         for week in self.weeks:
             #print(f'Week: {week}')
-            water_temp = self.sst[week,0:100,0:100] #self.future_sst
+            water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
             killed = []
 
@@ -137,6 +153,16 @@ class FishyFishy():
                             self.fish_data[school][1] += (itemindex[1][0]-1)
                         if (itemindex[0][0]-1) == 0 and (itemindex[1][0]-1) == 0 and self.fish_data[school][7] == 0:
                             self.fish_data[school][7] = 10 #have the fish panic for 10 days
+                    
+                    if self.fish_data[school][0] > future_pred_area[0]-2:
+                        self.fish_data[school][0] = future_pred_area[0]-2
+                    if self.fish_data[school][0] < 1:
+                        self.fish_data[school][0] += 1
+                    if self.fish_data[school][1] > future_pred_area[1]-2:
+                        self.fish_data[school][1] = future_pred_area[1]-2
+                    if self.fish_data[school][1] < 1:
+                        self.fish_data[school][1] += 1
+
 
                 except ValueError:
                     continue
@@ -158,30 +184,35 @@ class FishyFishy():
                 killed = []
 
         #display final position
-        final_pos = np.zeros((100,100))
-        for school in self.fish_data:
-            final_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
+        final_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
+        try:
+            for school in self.fish_data:
+                final_pos[self.fish_data[school][0],self.fish_data[school][1]] =1
+        except IndexError:
+            print(self.fish_data[school][0],self.fish_data[school][1])
 
-        overlay_2 = self.sst[500,0:100,0:100] + 20 * final_pos
-        plt.pcolormesh(x,y,overlay_2)
-
+        overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
         plt.show()
-        #for day in self.interval:
-            #water_temp = self.sst[depth,:15,:15] # self.interpolated[depth,:15,:15,day]
-            
-    def run(self, fish_temp_data, depth):
-        self.fish_migration(depth)
+        
+
+
+
+    def boat_movement(self):
+        pass
 
         
 
    
 ocean_data = '/Users/makotopowers/Desktop/sst.wkmean.1990-present.nc'
 fish_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
+future_pred_area = [360,180]
+future_sst = '/Users/makotopowers/Desktop/future_sst.npy'
 
-fish = FishyFishy(ocean_data, fish_data)
+fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst)
 
 fish.fish_migration()
 
-#fish.heat_map()
 
 #fish.lin_reg()
+#fish.heat_map()
