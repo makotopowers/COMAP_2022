@@ -9,67 +9,77 @@ import sklearn.linear_model
 
 
 class FishyFishy():
-    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst, daily_sst):
+    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst, daily_sst, future_sst_daily):
         #self.temp_data = temp_data
         self.optimal_temp = dict()
         self.fish_data = dict()
-        self.weeks = range(600)
+        self.weeks = range(8000)
         #fp=self.temp_data
+
+        '''
         nc = netCDF4.Dataset(ocean_data)
         self.sst = nc.variables['sst'][:].transpose(0,2,1) # shape = (1672,180,360)
 
-
+'''
         self.future_pred_area = future_pred_area
         self.fish_types = []
         panic = 0
         for fish, temp, survivable_days, acceptable_range in fish_data:
             self.optimal_temp[fish] = (temp, survivable_days, acceptable_range, panic)
             self.fish_types.append(fish)
-        self.future_sst = np.load(future_sst).transpose(0,2,1)
-        self.future_sst_daily = np.load(daily_sst).transpose(0,2,1)
-
+        #self.future_sst = np.load(future_sst).transpose(0,2,1)
+        #self.sst_daily = np.load(daily_sst).transpose(0,2,1)
+        self.future_sst_daily = np.load(future_sst_daily)
 
     
-        x = np.arange(0,80)
-        y = np.arange(0,64)
+        #x = np.arange(0,80)
+        #y = np.arange(0,64)
 
-        plt.pcolormesh(x,y,self.future_sst_daily[100,:,:].transpose(1,0), vmin=-2, vmax=23)
-        plt.show()
+        #plt.pcolormesh(x,y,self.sst_daily[100,:,:].transpose(1,0), vmin=-2, vmax=23)
+        #plt.show()
 
     def lin_reg(self):
-        x = np.arange(1671).reshape(-1,1)
-        content = [np.zeros((3000,1,1))]*(future_pred_area[0]*future_pred_area[1])
-        y = self.sst[x,300,45].reshape(-1,1)
+        x = np.arange(14245).reshape(-1,1)
+        #content = [np.zeros((40000,1,1))]*(future_pred_area[0]*future_pred_area[1])
+        #y = self.sst_daily[x,80,64].reshape(-1,1)
 
-        regr = sklearn.linear_model.LinearRegression()
-        regr.fit(x,y)
-        x_future = np.arange(3000).reshape(-1,1)
-        y_future = regr.predict(x_future).reshape(-1,)
-        print(regr.predict(np.arange(10,15).reshape(-1,1)))
-        print(regr.predict(np.arange(2986,2988).reshape(-1,1)))
-        plt.plot(x,y)
-        plt.plot(x_future,y_future, color='black')
-        plt.show()
+        #regr = sklearn.linear_model.LinearRegression()
+        #regr.fit(x,y)
+        x_future = np.arange(40000).reshape(-1,1)
+        #y_future = regr.predict(x_future).reshape(-1,)
+        #print(regr.predict(np.arange(10,15).reshape(-1,1)))
+        #print(regr.predict(np.arange(2986,2988).reshape(-1,1)))
+        #plt.plot(x,y)
+        #plt.plot(x_future,y_future, color='black')
+        #plt.show()
 
 
         #Code has already been run. Get array from self.future_sst
-        '''
-        content = [np.zeros((3000,1,1))]*(future_pred_area[0]*future_pred_area[1])
-        future_sst = np.array(content).reshape(3000,future_pred_area[0],future_pred_area[1])
+        
+        content = [np.zeros((40000,1,1))]*(future_pred_area[0]*future_pred_area[1])
+        future_sst_daily = np.array(content).reshape(40000,future_pred_area[0],future_pred_area[1])
         
         for i in range(future_pred_area[0]):
+            print(f'{i+1}/80.---')
             for j in range(future_pred_area[1]):
-                y = self.sst[x,i,j].reshape(-1,1)
+                y = self.sst_daily[x,i,j].reshape(-1,1)
                 regr = sklearn.linear_model.LinearRegression()
                 regr.fit(x,y)
                 y_future = regr.predict(x_future).reshape(-1,)
                 
 
-                future_sst[:,i,j] = y_future
+                future_sst_daily[:,i,j] = y_future
 
-        self.future_sst = future_sst
-        np.save('/Users/makotopowers/Desktop', future_sst)
-        '''
+        self.future_sst_daily = future_sst_daily
+        #np.save('/Users/makotopowers/Desktop/COMAP_2022_files',future_sst_daily)
+        print(self.future_sst_daily.shape)
+        print(self.future_sst_daily[0,25,20])
+        print(self.future_sst_daily[10000,25,20])
+        print(self.future_sst_daily[20000,25,20])
+        print(self.future_sst_daily[38000,25,20])
+        plt.plot(x,y)
+        plt.plot(x_future,y_future, color='black')
+        plt.show()
 
 
 
@@ -86,13 +96,13 @@ class FishyFishy():
         
         #initiate arrays for school position and water temp 
         week = 1
-        water_temp = self.future_sst[week*5,0:future_pred_area[0],0:future_pred_area[1]] 
+        water_temp = self.future_sst_daily[week*5,0:future_pred_area[0],0:future_pred_area[1]] 
         too_hot_counter = 0
         
        
 
         #initiate schools 
-        for i in range(1,10000): #how many schools
+        for i in range(1,1000): #how many schools
             ax = np.random.random(1)*(future_pred_area[0]-1)//1 
             ay = np.random.random(1)*(future_pred_area[1]-1)//1 
             if ax == 0:
@@ -125,17 +135,19 @@ class FishyFishy():
         for school in self.fish_data:
             initial_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
+        print(initial_pos.shape)
+        print(self.future_sst_daily.shape)
         
-        overlay_1 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * initial_pos
-        #plt.pcolormesh(x,y,overlay_1.transpose(1,0))
+        overlay_1 = self.future_sst_daily[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * initial_pos
+        #plt.pcolormesh(x,y,overlay_1.transpose(1,0),vmin=-2, vmax=23)
         #plt.colorbar()
         #plt.show()
         
-        water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
+        water_temp = self.future_sst_daily[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
 
         for i in range(100):
-            
+            print(f'{i+1}/100---')
 
             for school in self.fish_data.keys():
                 lat, lon = self.fish_data[school][0], self.fish_data[school][1]  
@@ -177,16 +189,16 @@ class FishyFishy():
             mid_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
         
-        overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
+        overlay_2 = self.future_sst_daily[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
         #plt.colorbar()
-        plt.show()
+        #plt.show()
 
 
         #loop through time interval 
         for week in self.weeks:
-            #print(f'Week: {week}')
-            water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
+            print(f'Week: {week}/8000')
+            water_temp = self.future_sst_daily[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
 
             for i in range(3):
@@ -228,7 +240,7 @@ class FishyFishy():
                         continue
 
                     #check condition of school
-
+                    '''
                     if water_temp[self.fish_data[school][0], self.fish_data[school][1]] > (self.fish_data[school][4] + self.fish_data[school][6]):
                         self.fish_data[school][2] += 1
                     else:
@@ -241,7 +253,7 @@ class FishyFishy():
                 if killed:
                     for death in killed:
                         self.fish_data.pop(death)
-                    killed = []
+                    killed = []'''
 
         #display final position
         final_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
@@ -251,9 +263,9 @@ class FishyFishy():
         except IndexError:
             print(self.fish_data[school][0],self.fish_data[school][1])
 
-        overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        #plt.pcolormesh(x,y,overlay_2.transpose(1,0))
-        #plt.show()
+        overlay_2 = self.future_sst_daily[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23)
+        plt.show()
         
 
 
@@ -266,14 +278,15 @@ class FishyFishy():
    
 ocean_data = 'sst.wkmean.1990-present.nc'
 fish_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
-future_pred_area = [360,180]
+future_pred_area = [80,64]
 future_sst = 'future_sst.npy'
 daily_sst = 'daily_ssts.npy'
+future_sst_daily = 'future_sst_daily.npy'
 
-fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst, daily_sst)
+fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst, daily_sst, future_sst_daily)
 
 
 
-#fish.fish_migration()
+fish.fish_migration()
 #fish.lin_reg()
 #fish.heat_map()
