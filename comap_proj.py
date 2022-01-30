@@ -9,7 +9,7 @@ import sklearn.linear_model
 
 
 class FishyFishy():
-    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst):
+    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst, daily_sst):
         #self.temp_data = temp_data
         self.optimal_temp = dict()
         self.fish_data = dict()
@@ -26,7 +26,15 @@ class FishyFishy():
             self.optimal_temp[fish] = (temp, survivable_days, acceptable_range, panic)
             self.fish_types.append(fish)
         self.future_sst = np.load(future_sst).transpose(0,2,1)
+        self.future_sst_daily = np.load(daily_sst).transpose(0,2,1)
 
+
+    
+        x = np.arange(0,80)
+        y = np.arange(0,64)
+
+        plt.pcolormesh(x,y,self.future_sst_daily[100,:,:].transpose(1,0), vmin=-2, vmax=23)
+        plt.show()
 
     def lin_reg(self):
         x = np.arange(1671).reshape(-1,1)
@@ -42,6 +50,7 @@ class FishyFishy():
         plt.plot(x,y)
         plt.plot(x_future,y_future, color='black')
         plt.show()
+
 
         #Code has already been run. Get array from self.future_sst
         '''
@@ -122,20 +131,16 @@ class FishyFishy():
         #plt.colorbar()
         #plt.show()
         
-
-
-        
-        #loop through time interval 
-        for week in self.weeks:
-            #print(f'Week: {week}')
-            water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
+        water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
-            killed = []
+
+        for i in range(100):
+            
 
             for school in self.fish_data.keys():
                 lat, lon = self.fish_data[school][0], self.fish_data[school][1]  
 
-                #move fish to block with minimum difference between optimal and temp
+            #move fish to block with minimum difference between optimal and temp
                 try:
                     if self.fish_data[school][7] != 0:
                         self.fish_data[school][0] += int(round(random.uniform(-1,1),0))
@@ -167,21 +172,76 @@ class FishyFishy():
                 except ValueError:
                     continue
 
-                #check condition of school
+        mid_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
+        for school in self.fish_data:
+            mid_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
-                if water_temp[self.fish_data[school][0], self.fish_data[school][1]] > (self.fish_data[school][4] + self.fish_data[school][6]):
-                    self.fish_data[school][2] += 1
-                else:
-                    self.fish_data[school][2] = 0
+        
+        overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
+        #plt.colorbar()
+        plt.show()
 
-                if self.fish_data[school][2] > self.fish_data[school][5]:
-                    killed.append(school)
-                    #print(f'{school} was killed.')
 
-            if killed:
-                for death in killed:
-                    self.fish_data.pop(death)
+        #loop through time interval 
+        for week in self.weeks:
+            #print(f'Week: {week}')
+            water_temp = self.future_sst[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
+            #change the position of each school 
+
+            for i in range(3):
                 killed = []
+
+                for school in self.fish_data.keys():
+                    lat, lon = self.fish_data[school][0], self.fish_data[school][1]  
+
+                #move fish to block with minimum difference between optimal and temp
+                    try:
+                        if self.fish_data[school][7] != 0:
+                            self.fish_data[school][0] += int(round(random.uniform(-1,1),0))
+                            self.fish_data[school][1] += int(round(random.uniform(-1,1),0))
+                            self.fish_data[school][7] -= 1
+                        else:
+                            if np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]) > self.fish_data[school][4]:
+                                itemindex = np.where(water_temp[lat-1:lat+2,lon-1:lon+2] == np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]))
+                                self.fish_data[school][0] += (itemindex[0][0]-1)
+                                self.fish_data[school][1] += (itemindex[1][0]-1)
+                            else:
+                                diff = np.abs(water_temp[lat-1:lat+2,lon-1:lon+2] - self.fish_data[school][4])
+                                itemindex = np.where(diff == np.amin(diff))
+                                self.fish_data[school][0] += (itemindex[0][0]-1)
+                                self.fish_data[school][1] += (itemindex[1][0]-1)
+                            if (itemindex[0][0]-1) == 0 and (itemindex[1][0]-1) == 0 and self.fish_data[school][7] == 0:
+                                self.fish_data[school][7] = 10 #have the fish panic for 10 days
+                        
+                        if self.fish_data[school][0] > future_pred_area[0]-2:
+                            self.fish_data[school][0] = future_pred_area[0]-2
+                        if self.fish_data[school][0] < 1:
+                            self.fish_data[school][0] += 1
+                        if self.fish_data[school][1] > future_pred_area[1]-2:
+                            self.fish_data[school][1] = future_pred_area[1]-2
+                        if self.fish_data[school][1] < 1:
+                            self.fish_data[school][1] += 1
+
+
+                    except ValueError:
+                        continue
+
+                    #check condition of school
+
+                    if water_temp[self.fish_data[school][0], self.fish_data[school][1]] > (self.fish_data[school][4] + self.fish_data[school][6]):
+                        self.fish_data[school][2] += 1
+                    else:
+                        self.fish_data[school][2] = 0
+
+                    if self.fish_data[school][2] > self.fish_data[school][5]:
+                        killed.append(school)
+                        #print(f'{school} was killed.')
+
+                if killed:
+                    for death in killed:
+                        self.fish_data.pop(death)
+                    killed = []
 
         #display final position
         final_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
@@ -192,12 +252,14 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0))
-        plt.show()
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0))
+        #plt.show()
         
 
 
 
+    #def distance(self):
+       # for x in docks:
 
         
 
@@ -206,11 +268,12 @@ ocean_data = 'sst.wkmean.1990-present.nc'
 fish_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
 future_pred_area = [360,180]
 future_sst = 'future_sst.npy'
+daily_sst = 'daily_ssts.npy'
 
-fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst)
+fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst, daily_sst)
 
 
 
-fish.fish_migration()
+#fish.fish_migration()
 #fish.lin_reg()
 #fish.heat_map()
