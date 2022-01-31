@@ -9,35 +9,20 @@ import sklearn.linear_model
 
 
 class FishyFishy():
-    def __init__(self, ocean_data, fish_data, future_pred_area, future_sst, daily_sst, future_sst_daily):
-        #self.temp_data = temp_data
+    def __init__(self, fish_data, future_pred_area, daily_sst, future_sst_daily):
         self.optimal_temp = dict()
         self.fish_data = dict()
-        self.weeks = range(200)
-        #fp=self.temp_data
-
-        '''
-        nc = netCDF4.Dataset(ocean_data)
-        self.sst = nc.variables['sst'][:].transpose(0,2,1) # shape = (1672,180,360)
-
-'''
+        self.weeks = range(4000)
         self.future_pred_area = future_pred_area
         self.fish_types = []
         panic = 0
         for fish, temp, survivable_days, acceptable_range in fish_data:
             self.optimal_temp[fish] = (temp, survivable_days, acceptable_range, panic)
             self.fish_types.append(fish)
-        #self.future_sst = np.load(future_sst).transpose(0,2,1)
         #self.sst_daily = np.load(daily_sst).transpose(0,2,1)
         self.future_sst_daily = np.load(future_sst_daily)
 
-    
-        #x = np.arange(0,80)
-        #y = np.arange(0,64)
-
-        #plt.pcolormesh(x,y,self.sst_daily[100,:,:].transpose(1,0), vmin=-2, vmax=23)
-        #plt.show()
-        dock_coords = []
+        dock_coords = {}
         docks = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
         for x in range(1,future_pred_area[0]-1):
             for y in range(1,future_pred_area[1]-1):
@@ -45,11 +30,11 @@ class FishyFishy():
                 
                 if self.future_sst_daily[1000,x,y]<(-1000) and np.amax(self.future_sst_daily[10,x-1:x+2,y-1:y+2]) >(-1000):
                     docks[x,y] = 100
-                    dock_coords.append([x,y])
+                    dock_coords[f'dock_{x}{y}'] = [x,y]
         
         self.docks = docks
         self.dock_coords = dock_coords
-        print(self.dock_coords)
+        #print(self.dock_coords)
         #print(docks)
         #x = np.arange(0,80)
         #y = np.arange(0,64)
@@ -168,6 +153,9 @@ class FishyFishy():
 
         for i in range(100):
             print(f'{i+1}/100---')
+            mid_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
+            for school in self.fish_data:
+                mid_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
 
             for school in self.fish_data.keys():
                 lat, lon = self.fish_data[school][0], self.fish_data[school][1]  
@@ -181,8 +169,11 @@ class FishyFishy():
                     else:
                         if np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]) > self.fish_data[school][4]:
                             itemindex = np.where(water_temp[lat-1:lat+2,lon-1:lon+2] == np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]))
-                            self.fish_data[school][0] += (itemindex[0][0]-1)
-                            self.fish_data[school][1] += (itemindex[1][0]-1)
+                            if mid_pos[min(self.fish_data[school][0] + (itemindex[0][0]-1),78),min(self.fish_data[school][1] + (itemindex[1][0]-1),61)] ==0:
+                                self.fish_data[school][0] += (itemindex[0][0]-1)
+                                self.fish_data[school][1] += (itemindex[1][0]-1)
+                            else:
+                                continue
                         else:
                             diff = np.abs(water_temp[lat-1:lat+2,lon-1:lon+2] - self.fish_data[school][4])
                             itemindex = np.where(diff == np.amin(diff))
@@ -214,6 +205,9 @@ class FishyFishy():
         #plt.colorbar()
         #plt.show()
 
+        out_of_range = {}
+        out_of_range_map = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))  
+
 
         #loop through time interval 
         for week in self.weeks:
@@ -221,6 +215,9 @@ class FishyFishy():
             water_temp = self.future_sst_daily[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
 
+            mid_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
+            for school in self.fish_data:
+                mid_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
             
             killed = []
 
@@ -236,8 +233,11 @@ class FishyFishy():
                     else:
                         if np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]) > self.fish_data[school][4]:
                             itemindex = np.where(water_temp[lat-1:lat+2,lon-1:lon+2] == np.amin(water_temp[lat-1:lat+2,lon-1:lon+2]))
-                            self.fish_data[school][0] += (itemindex[0][0]-1)
-                            self.fish_data[school][1] += (itemindex[1][0]-1)
+                            if mid_pos[min(self.fish_data[school][0] + (itemindex[0][0]-1),78),min(self.fish_data[school][1] + (itemindex[1][0]-1),61)] ==0:
+                                self.fish_data[school][0] += (itemindex[0][0]-1)
+                                self.fish_data[school][1] += (itemindex[1][0]-1)
+                            else:
+                                continue
                         else:
                             diff = np.abs(water_temp[lat-1:lat+2,lon-1:lon+2] - self.fish_data[school][4])
                             itemindex = np.where(diff == np.amin(diff))
@@ -276,41 +276,42 @@ class FishyFishy():
                 killed = []'''
 
 
-
+            
             dock_range = 3
-            out_of_range = {}
-            out_of_range_map = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
             mid_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
             for school in self.fish_data:
                 mid_pos[self.fish_data[school][0],self.fish_data[school][1]] =1
-
-            #print(mid_pos[0:9,0:10])
-
-            for a in self.dock_coords:
-                x,y = a
-                print(x,y)
-                #print(max(x-dock_range,0),min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0),min(y+dock_range+1, future_pred_area[1]))
-                print(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])])
+            
+            
+        
+            for dock in self.dock_coords:
+                x,y = self.dock_coords[dock]
+                #print(x,y)
+                
                 #print(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])])
-                print(np.amax(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])]))
+                
+                #print(np.amax(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])]))
                 if np.amax(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])])==0:
                     try:
-                        out_of_range[(x,y)].append(week)
-                    except:
-                        out_of_range[(x,y)] = [week]
+                        out_of_range[dock].append(week)
+                    except KeyError:
+                        out_of_range[dock] = [week]
 
-            print(out_of_range)
-            for (x,y) in out_of_range:
-                out_of_range[(x,y)] = min(out_of_range[(x,y)])
-                out_of_range_map[x,y] = out_of_range[(x,y)]
+
+        #print(out_of_range)
+        for dock in out_of_range:
+            out_of_range[dock] = min(out_of_range[dock])
+            
+            x,y =self.dock_coords[dock]
+            out_of_range_map[x,y] = out_of_range[dock]
                         
         
         print(out_of_range)
-
+        
         x = np.arange(0,future_pred_area[0])
         y = np.arange(0,future_pred_area[1])
-        #print(out_of_range)
-        #plt.pcolormesh(x,y,out_of_range_map.transpose(1,0))
+        
+        #plt.pcolormesh(x,y,out_of_range_map.transpose(1,0),vmin=0,vmax=100)
         #plt.show()
             
 
@@ -321,7 +322,7 @@ class FishyFishy():
         final_pos = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))
         try:
             for school in self.fish_data:
-                final_pos[self.fish_data[school][0],self.fish_data[school][1]] =1
+                final_pos[self.fish_data[school][0],self.fish_data[school][1]] +=1
         except IndexError:
             print(self.fish_data[school][0],self.fish_data[school][1])
 
@@ -347,7 +348,7 @@ future_sst = 'future_sst.npy'
 daily_sst = 'daily_ssts.npy'
 future_sst_daily = 'future_sst_daily.npy'
 
-fish = FishyFishy(ocean_data, fish_data, future_pred_area, future_sst, daily_sst, future_sst_daily)
+fish = FishyFishy(fish_data, future_pred_area, daily_sst, future_sst_daily)
 
 
 
