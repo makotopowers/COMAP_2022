@@ -12,7 +12,7 @@ class FishyFishy():
     def __init__(self, fish_data, future_pred_area, daily_sst, future_sst_daily):
         self.optimal_temp = dict()
         self.fish_data = dict()
-        self.weeks = range(4000)
+        self.weeks = 4000
         self.future_pred_area = future_pred_area
         self.fish_types = []
         panic = 0
@@ -89,9 +89,9 @@ class FishyFishy():
 
 
     def heat_map(self):
-        x = np.arange(0,future_pred_area[1])
-        y = np.arange(0,future_pred_area[0])
-        plt.pcolormesh(x,y,self.future_sst[100,0:future_pred_area[0],0:future_pred_area[1]])
+        x = np.arange(0,future_pred_area[0])
+        y = np.arange(0,future_pred_area[1])
+        plt.pcolormesh(x,y,self.future_sst_daily[0,0:future_pred_area[0],0:future_pred_area[1]].transpose(1,0),vmin=0)
         plt.colorbar()
         plt.show()
 
@@ -201,17 +201,17 @@ class FishyFishy():
 
         
         overlay_2 = self.future_sst_daily[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
-        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
-        #plt.colorbar()
-        #plt.show()
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
+        plt.colorbar()
+        plt.show()
 
         out_of_range = {}
         out_of_range_map = np.zeros((future_pred_area[0]-1,future_pred_area[1]-1))  
 
 
         #loop through time interval 
-        for week in self.weeks:
-            print(f'Week: {week}/40000')
+        for week in range(self.weeks):
+            print(f'Week: {week}/{self.weeks} :'+'*'*int((week/self.weeks)*20//1))
             water_temp = self.future_sst_daily[int(week*5),0:future_pred_area[0],0:future_pred_area[1]] 
             #change the position of each school 
 
@@ -286,11 +286,7 @@ class FishyFishy():
         
             for dock in self.dock_coords:
                 x,y = self.dock_coords[dock]
-                #print(x,y)
-                
-                #print(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])])
-                
-                #print(np.amax(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])]))
+            
                 if np.amax(mid_pos[max(x-dock_range,0):min(x+dock_range+1,future_pred_area[0]),max(y -dock_range,0):min(y+dock_range+1, future_pred_area[1])])==0:
                     try:
                         out_of_range[dock].append(week)
@@ -327,8 +323,8 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst_daily[week,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23)
-        plt.show()
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23)
+        #plt.show()
         
 
 
@@ -341,8 +337,12 @@ class FishyFishy():
         
 
    
-ocean_data = 'sst.wkmean.1990-present.nc'
-fish_data = [('herring', 4.6, 3, 2), ('mackerel', 5, 4, 3)]
+#ocean_data = 'sst.wkmean.1990-present.nc'
+#fish_data = [('mackerel', 9, 4, 3)]
+fish_data = [('herring', 16, 3, 2)]
+
+#('mackerel', 9, 4, 3)
+#('herring', 16, 3, 2)
 future_pred_area = [80,64]
 future_sst = 'future_sst.npy'
 daily_sst = 'daily_ssts.npy'
@@ -352,6 +352,6 @@ fish = FishyFishy(fish_data, future_pred_area, daily_sst, future_sst_daily)
 
 
 
-fish.fish_migration()
+#fish.fish_migration()
 #fish.lin_reg()
-#fish.heat_map()
+fish.heat_map()
