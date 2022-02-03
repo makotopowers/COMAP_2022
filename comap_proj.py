@@ -93,7 +93,7 @@ class FishyFishy():
 
         x = np.arange(0,future_pred_area[0])
         y = np.arange(0,future_pred_area[1])
-        plt.pcolormesh(x,y,self.future_sst_daily[0,0:future_pred_area[0],0:future_pred_area[1]].transpose(1,0),vmin=0)
+        plt.pcolormesh(x,y,self.future_sst_daily[0,0:future_pred_area[0],0:future_pred_area[1]].transpose(1,0),vmin=0, cmap='afmhot')
         plt.colorbar()
         plt.show()
 
@@ -144,7 +144,7 @@ class FishyFishy():
         for school in self.fish_data:
             initial_pos[self.fish_data[school][0],self.fish_data[school][1]] = 1
         overlay_1 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * initial_pos
-        #plt.pcolormesh(x,y,overlay_1.transpose(1,0),vmin=-2, vmax=23)
+        #plt.pcolormesh(x,y,overlay_1.transpose(1,0),vmin=-2, vmax=23, cmap='afmhot')
         #plt.colorbar()
         #plt.show()
         
@@ -213,7 +213,7 @@ class FishyFishy():
 
         
         overlay_2 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
-        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23, cmap='afmhot')
         #plt.colorbar()
         #plt.show()
 
@@ -318,9 +318,9 @@ class FishyFishy():
         
         x = np.arange(0,future_pred_area[0])
         y = np.arange(0,future_pred_area[1])
-        plt.pcolormesh(x,y,out_of_range_map.transpose(1,0),vmin=0,vmax=2000)
-        plt.colorbar()
-        plt.show()
+        #plt.pcolormesh(x,y,out_of_range_map.transpose(1,0),vmin=0,vmax=2000, cmap='afmhot')
+        #plt.colorbar()
+        #plt.show()
             
 
         '''
@@ -338,8 +338,8 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        #plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23)
-        #plt.show()
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23, cmap='afmhot')
+        plt.show()
 
 
    
