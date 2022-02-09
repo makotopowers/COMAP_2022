@@ -9,9 +9,10 @@ import sklearn.linear_model
 
 
 class FishyFishy():
-    def __init__(self, fish_data, future_pred_area, future_sst_daily):
+    def __init__(self, fish_data, future_pred_area, future_sst_daily, sst_daily):
 
-
+        self.sst_daily = np.load(sst_daily)
+        print(self.sst_daily.shape)
         '''
         initialize.
         '''
@@ -65,6 +66,11 @@ class FishyFishy():
         content = [np.zeros((40000,1,1))]*(future_pred_area[0]*future_pred_area[1])
         future_sst_daily = np.array(content).reshape(40000,future_pred_area[0],future_pred_area[1])
         
+        y = self.sst_daily[x,30,30].reshape(-1,1)
+        regr = sklearn.linear_model.LinearRegression()
+        regr.fit(x,y)
+        y_future = regr.predict(x_future).reshape(-1,)
+        '''
         for i in range(future_pred_area[0]):
             print(f'{i+1}/80.---')
             for j in range(future_pred_area[1]):
@@ -75,11 +81,14 @@ class FishyFishy():
                 
 
                 future_sst_daily[:,i,j] = y_future
+        '''
 
         self.future_sst_daily = future_sst_daily
-        np.save('/Users/makotopowers/Desktop/COMAP_2022_files',future_sst_daily)
+        #np.save('/Users/makotopowers/Desktop/COMAP_2022_files',future_sst_daily)
         plt.plot(x,y)
+        #plt.scatter(x,y)
         plt.plot(x_future,y_future, color='black')
+        
         plt.show()
 
 
@@ -93,7 +102,7 @@ class FishyFishy():
 
         x = np.arange(0,future_pred_area[0])
         y = np.arange(0,future_pred_area[1])
-        plt.pcolormesh(x,y,self.future_sst_daily[0,0:future_pred_area[0],0:future_pred_area[1]].transpose(1,0),vmin=0, cmap='afmhot')
+        plt.pcolormesh(x,y,self.future_sst_daily[39999,0:future_pred_area[0],0:future_pred_area[1]].transpose(1,0),vmin=0,vmax=16, cmap='afmhot')
         plt.colorbar()
         plt.show()
 
@@ -213,9 +222,9 @@ class FishyFishy():
 
         
         overlay_2 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
-        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23, cmap='afmhot')
-        #plt.colorbar()
-        #plt.show()
+        plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
+        plt.colorbar()
+        plt.show()
 
 
         '''
@@ -338,8 +347,8 @@ class FishyFishy():
             print(self.fish_data[school][0],self.fish_data[school][1])
 
         overlay_2 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * final_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23, cmap='afmhot')
-        plt.show()
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0), vmin=-2, vmax=23, cmap='afmhot')
+        #plt.show()
 
 
    
@@ -349,7 +358,7 @@ files.
 
 #ocean_data = 'sst.wkmean.1990-present.nc'
 #future_sst = 'future_sst.npy'
-#daily_sst = 'daily_ssts.npy'
+daily_sst = 'daily_ssts.npy'
 
 future_sst_daily = 'future_sst_daily.npy'
 
@@ -375,8 +384,11 @@ future_pred_area = [80,64]
 instantiate.
 '''
 
-fish = FishyFishy(fish_data, future_pred_area, future_sst_daily)
+fish = FishyFishy(fish_data, future_pred_area, future_sst_daily, daily_sst)
+
 
 fish.fish_migration()
 #fish.lin_reg()
+
 #fish.heat_map()
+
