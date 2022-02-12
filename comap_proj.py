@@ -222,9 +222,9 @@ class FishyFishy():
 
         
         overlay_2 = self.future_sst_daily[day,0:future_pred_area[0]-1,0:future_pred_area[1]-1] + 20 * mid_pos
-        plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
-        plt.colorbar()
-        plt.show()
+        #plt.pcolormesh(x,y,overlay_2.transpose(1,0),vmin=-2, vmax=23)
+        #plt.colorbar()
+        #plt.show()
 
 
         '''
@@ -327,9 +327,9 @@ class FishyFishy():
         
         x = np.arange(0,future_pred_area[0])
         y = np.arange(0,future_pred_area[1])
-        #plt.pcolormesh(x,y,out_of_range_map.transpose(1,0),vmin=0,vmax=2000, cmap='afmhot')
-        #plt.colorbar()
-        #plt.show()
+        plt.pcolormesh(x,y,out_of_range_map.transpose(1,0),vmin=0,vmax=2000, cmap='afmhot')
+        plt.colorbar()
+        plt.show()
             
 
         '''
@@ -358,9 +358,9 @@ files.
 
 #ocean_data = 'sst.wkmean.1990-present.nc'
 #future_sst = 'future_sst.npy'
-daily_sst = 'daily_ssts.npy'
+daily_sst = '/Users/makotopowers/Desktop/COMAP_2022_FILES/COMAP_2022_FILES_DATA/daily_ssts.npy'
 
-future_sst_daily = 'future_sst_daily.npy'
+future_sst_daily = '/Users/makotopowers/Desktop/COMAP_2022_FILES/COMAP_2022_FILES_DATA/future_sst_daily.npy'
 
 
 '''
